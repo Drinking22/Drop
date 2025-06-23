@@ -1,0 +1,13 @@
+public class DropActor extends ActorBeta {
+    private float speed = 150f; // скорость падения в пикселях в секунду
+
+    public DropActor() {
+        super();
+    }
+
+    @Override
+    public void act(float dt) {
+        super.act(dt);
+        moveBy(0, -speed * dt);
+    }
+}
