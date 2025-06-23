@@ -1,0 +1,22 @@
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
+
+public class BucketActor extends ActorBeta {
+    private float speed = 200f; // скорость в пикселях в секунду
+
+    public BucketActor() {
+        super();
+    }
+
+    @Override
+    public void act(float dt) {
+        super.act(dt);
+        if (Gdx.input.isKeyPressed(Keys.LEFT)) moveBy(-speed * dt, 0);
+        if (Gdx.input.isKeyPressed(Keys.RIGHT)) moveBy(speed * dt, 0);
+
+        // Ограничим движение ведра по горизонтали (например, в пределах экрана)
+        float x = getX();
+        if (x < 0) setX(0);
+        if (x + getWidth() > Gdx.graphics.getWidth()) setX(Gdx.graphics.getWidth() - getWidth());
+    }
+}
