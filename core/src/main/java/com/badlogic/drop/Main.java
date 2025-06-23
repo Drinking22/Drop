@@ -22,147 +22,75 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
  * {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms.
  */
 public class Main implements ApplicationListener {
-    Texture backgroundTexture;
-    Texture bucketTexture;
-    Texture dropTexture;
-    Sound dropSound;
-    Music music;
-    SpriteBatch spriteBatch;
-    FitViewport viewport;
-    Sprite bucketSprite;
-    Vector2 touchPos;
-    Array<Sprite> dropSprites;
-    float dropTimer;
-    Rectangle bucketRectangle;
-    Rectangle dropRectangle;
+    private Stage stage;
+    private BucketActor bucket;
+    private Array<DropActor> drops;
+    private Texture bucketTexture;
+    private Texture dropTexture;
+    private float dropTimer;
 
     @Override
     public void create() {
-        backgroundTexture = new Texture("background.png");
-        bucketTexture = new Texture("bucket.png");
-        dropTexture = new Texture("drop.png");
-        dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
-        music = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
-        music.setLooping(true);
-        music.setVolume(.5f);
-        music.play();
-        spriteBatch = new SpriteBatch();
-        viewport = new FitViewport(8, 5);
-        bucketSprite = new Sprite(bucketTexture);
-        bucketSprite.setSize(1, 1);
-        touchPos = new Vector2();
-        dropSprites = new Array<>();
-        bucketRectangle = new Rectangle();
-        dropRectangle = new Rectangle();
-    }
+        stage = new Stage(new ScreenViewport());
+        Gdx.input.setInputProcessor(stage);
 
-    @Override
-    public void resize(int width, int height) {
-        viewport.update(width, height, true);
+        bucketTexture = new Texture(Gdx.files.internal("bucket.png"));
+        dropTexture = new Texture(Gdx.files.internal("drop.png"));
+
+        bucket = new BucketActor();
+        bucket.setTexture(bucketTexture);
+        bucket.setPosition(Gdx.graphics.getWidth() / 2f - bucket.getWidth() / 2f, 20);
+        stage.addActor(bucket);
+
+        drops = new Array<>();
+        dropTimer = 0f;
     }
 
     @Override
     public void render() {
-        input();
-        logic();
-        draw();
+        float dt = Gdx.graphics.getDeltaTime();
+
+        dropTimer += dt;
+        if (dropTimer > 1f) {
+            dropTimer = 0f;
+            spawnDrop();
+        }
+
+        // Обновляем актёров
+        stage.act(dt);
+
+        // Проверяем столкновения и удаляем капли
+        for (int i = drops.size - 1; i >= 0; i--) {
+            DropActor drop = drops.get(i);
+            if (drop.getY() + drop.getHeight() < 0) {
+                drop.remove();
+                drops.removeIndex(i);
+            } else if (drop.overlaps(bucket)) {
+                drop.remove();
+                drops.removeIndex(i);
+                // Здесь можно добавить звук или счётчик пойманных капель
+            }
+        }
+
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        stage.draw();
     }
 
-    @Override
-    public void pause() {
-        // Invoked when your application is paused.
-    }
-
-    @Override
-    public void resume() {
-        // Invoked when your application is resumed after pause.
+    private void spawnDrop() {
+        DropActor drop = new DropActor();
+        drop.setTexture(dropTexture);
+        float x = (float) Math.random() * (Gdx.graphics.getWidth() - drop.getWidth());
+        drop.setPosition(x, Gdx.graphics.getHeight());
+        stage.addActor(drop);
+        drops.add(drop);
     }
 
     @Override
     public void dispose() {
-        // Destroy application's resources here.
-    }
-
-    private void input() {
-        float speed = 4f;
-        float delta = Gdx.graphics.getDeltaTime();
-
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            bucketSprite.translateX(speed * delta);
-        } else if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            bucketSprite.translateX(-speed * delta);
-        }
-
-        if (Gdx.input.isTouched()) {
-            touchPos.set(Gdx.input.getX(), Gdx.input.getY());
-            viewport.unproject(touchPos);
-            bucketSprite.setCenterX(touchPos.x);
-        }
-    }
-
-    private void logic() {
-        float worldWidth = viewport.getWorldWidth();
-        float worldHeight = viewport.getWorldHeight();
-        float bucketWidth = bucketSprite.getWidth();
-        float bucketHeight = bucketSprite.getHeight();
-
-        bucketSprite.setX(MathUtils.clamp(bucketSprite.getX(), 0, worldWidth - bucketWidth));
-        float delta = Gdx.graphics.getDeltaTime();
-        bucketRectangle.set(bucketSprite.getX(), bucketSprite.getY(), bucketWidth, bucketHeight);
-
-        for (int i = dropSprites.size - 1; i >= 0; i--) {
-            Sprite dropSprite = dropSprites.get(i);
-            float dropWidth = dropSprite.getWidth();
-            float dropHeight = dropSprite.getHeight();
-
-            dropSprite.translateY(-2f * delta);
-            dropRectangle.set(dropSprite.getX(), dropSprite.getY(), dropWidth, dropHeight);
-
-            if (dropSprite.getY() < -dropHeight) {
-                dropSprites.removeIndex(i);
-            } else if (bucketRectangle.overlaps(dropRectangle)) {
-                dropSprites.removeIndex(i);
-                dropSound.play();
-            }
-        }
-
-        dropTimer += delta;
-
-        if (dropTimer > 1f) {
-            dropTimer = 0;
-            createDroplet();
-        }
-    }
-
-    private void draw() {
-        ScreenUtils.clear(Color.BLACK);
-        viewport.apply();
-        spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
-        spriteBatch.begin();
-
-        float worldWidth = viewport.getWorldWidth();
-        float worldHeight = viewport.getWorldHeight();
-
-        spriteBatch.draw(backgroundTexture, 0, 0, worldWidth, worldHeight);
-        bucketSprite.draw(spriteBatch);
-
-        for (Sprite dropSprite : dropSprites) {
-            dropSprite.draw(spriteBatch);
-        }
-
-        spriteBatch.end();
-    }
-
-    private void createDroplet() {
-        float dropWidth = 1;
-        float dropHeight = 1;
-        float worldWidth = viewport.getWorldWidth();
-        float worldHeight = viewport.getWorldHeight();
-
-        Sprite dropSprite = new Sprite(dropTexture);
-        dropSprite.setSize(dropWidth, dropHeight);
-        dropSprite.setX(MathUtils.random(0f, worldWidth - dropWidth));
-        dropSprite.setY(worldHeight);
-        dropSprites.add(dropSprite);
+        stage.dispose();
+        bucketTexture.dispose();
+        dropTexture.dispose();
     }
 }
