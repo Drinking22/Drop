@@ -1,0 +1,78 @@
+package com.badlogic.drop;
+
+import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.audio.Music;
+
+/**
+ * Класс AssertLoader — фасад для работы с AssetManager.
+ */
+public class AssertLoader {
+    private AssetManager assetManager;
+
+    public AssertLoader() {
+        assetManager = new AssetManager();
+    }
+
+    /**
+     * Запускает загрузку всех ресурсов.
+     */
+    public void loadAssets() {
+        assetManager.load("bucket.png", Texture.class);
+        assetManager.load("drop.png", Texture.class);
+        assetManager.load("rain.wav", Sound.class);
+        assetManager.load("music.mp3", Music.class);
+        // Добавьте другие ресурсы по необходимости
+    }
+
+    /**
+     * Обновляет загрузку ассетов (асинхронно).
+     * @return true, если загрузка завершена.
+     */
+    public boolean update() {
+        return assetManager.update();
+    }
+
+    /**
+     * Возвращает прогресс загрузки (от 0 до 1).
+     */
+    public float getProgress() {
+        return assetManager.getProgress();
+    }
+
+    /**
+     * Получить текстуру ведра.
+     */
+    public Texture getBucketTexture() {
+        return assetManager.get("bucket.png", Texture.class);
+    }
+
+    /**
+     * Получить текстуру капли.
+     */
+    public Texture getDropTexture() {
+        return assetManager.get("drop.png", Texture.class);
+    }
+
+    /**
+     * Получить звук дождя.
+     */
+    public Sound getRainSound() {
+        return assetManager.get("rain.wav", Sound.class);
+    }
+
+    /**
+     * Получить фоновую музыку.
+     */
+    public Music getMusic() {
+        return assetManager.get("music.mp3", Music.class);
+    }
+
+    /**
+     * Очистить и выгрузить все ресурсы.
+     */
+    public void dispose() {
+        assetManager.dispose();
+    }
+}
